@@ -31,15 +31,12 @@
     <style>
         body { font-family: 'Share Tech Mono', monospace; background-color: #090a0f; color: #00ffcc; }
         .cyber-panel { background: rgba(18, 20, 29, 0.95); border: 1px solid #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.15); }
-        .cyber-panel-magenta { border: 1px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.15); }
         .cyber-input { background: #040508; color: #00ffcc; border: 1px solid #00ffcc; outline: none; }
         .cyber-input:focus { box-shadow: 0 0 8px #00ffcc; }
         .cyber-btn { background: #00ffcc; color: #090a0f; text-transform: uppercase; font-weight: bold; transition: all 0.2s; }
         .cyber-btn:hover { background: #00ccaa; box-shadow: 0 0 12px #00ffcc; }
         .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; }
         .cyber-btn-outline:hover { background: #00ffcc; color: #090a0f; }
-        .cyber-btn-magenta { background: #ff00ff; color: #090a0f; }
-        .cyber-btn-magenta:hover { background: #cc00cc; box-shadow: 0 0 12px #ff00ff; }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -55,7 +52,7 @@
         <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-magenta tracking-widest drop-shadow-[0_0_10px_rgba(0,255,204,0.8)]">
             SMS OTP & NUMBER EXTRACTOR PRO
         </h1>
-        <p class="text-cyber-cyan mt-2 opacity-80">CYBERPUNK EDITION // v1.0</p>
+        <p class="text-cyber-cyan mt-2 opacity-80">ULTRA-ACCURATE ENGINE // v2.0</p>
     </header>
 
     <!-- Main Controls -->
@@ -77,7 +74,7 @@
                 </div>
             </div>
             
-            <textarea id="rawInput" rows="6" class="cyber-input w-full p-3 rounded resize-y" placeholder="Paste raw SMS text logs here... (e.g. +1234567890 : Your Facebook code is 123456)"></textarea>
+            <textarea id="rawInput" rows="6" class="cyber-input w-full p-3 rounded resize-y" placeholder="Paste raw logs... (e.g. +8801700000000 | G-123456 is your Facebook code)"></textarea>
             
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3 w-full md:w-auto">
@@ -100,23 +97,19 @@
 
             <h3 class="text-sm font-bold mt-4 mb-2 text-cyber-cyan">GLOBAL EXPORT (ALL)</h3>
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="exportExcel()" class="cyber-btn px-2 py-1 text-sm rounded">📊 EXPORT EXCEL</button>
-                <button onclick="exportCSV()" class="cyber-btn px-2 py-1 text-sm rounded">📄 EXPORT CSV</button>
+                <button onclick="exportExcel()" class="cyber-btn px-2 py-1 text-sm rounded">📊 EXCEL</button>
+                <button onclick="exportCSV()" class="cyber-btn px-2 py-1 text-sm rounded">📄 CSV</button>
             </div>
         </div>
     </div>
 
     <!-- Output Dashboard -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard">
-        <!-- Dashboard cards will be injected here via JS -->
-    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard"></div>
 
     <script>
-        // --- State Management ---
         let globalData = [];
         let historyStack = [];
 
-        // Categories Map
         const CATEGORIES = {
             FB6: { id: 'FB6', title: 'FACEBOOK (6-DIGIT)', color: 'cyber-cyan' },
             FB5: { id: 'FB5', title: 'FACEBOOK (5-DIGIT)', color: 'blue-400' },
@@ -126,13 +119,11 @@
             OTH5: { id: 'OTH5', title: 'OTHER (5-DIGIT)', color: 'orange-400' }
         };
 
-        // Multi-language translation keywords mapping to English
         const translationDict = {
-            'codigo': 'code', 'código': 'code', 'kód': 'code', 'رمز': 'code', 'kod': 'code', 'kode': 'code', 
-            'senha': 'password', 'mot de passe': 'password', 'пароль': 'password'
+            'codigo': 'code', 'código': 'code', 'kód': 'code', 'رمز': 'code', 'kod': 'code', 'kode': 'code'
         };
 
-        // --- File Upload Handling ---
+        // File Upload
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -144,28 +135,23 @@
                 if (file.name.endsWith('.txt')) {
                     document.getElementById('rawInput').value += (document.getElementById('rawInput').value ? '\n' : '') + data;
                 } else {
-                    // Handle Excel / CSV
                     const workbook = XLSX.read(data, { type: 'binary' });
                     let combinedText = '';
                     workbook.SheetNames.forEach(sheetName => {
                         const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
-                        xlData.forEach(row => {
-                            combinedText += row.join(' ') + '\n';
-                        });
+                        xlData.forEach(row => { combinedText += row.join(' ') + '\n'; });
                     });
                     document.getElementById('rawInput').value += (document.getElementById('rawInput').value ? '\n' : '') + combinedText;
                 }
             };
-            
             if (file.name.endsWith('.txt')) reader.readAsText(file);
             else reader.readAsBinaryString(file);
         });
 
-        // --- Core Processing Logic ---
+        // The Engine
         function processData() {
             const rawText = document.getElementById('rawInput').value;
             const lines = rawText.split('\n');
-            
             const convert5to6 = document.getElementById('toggle5to6').checked;
             const removeDupes = document.getElementById('toggleDuplicates').checked;
             
@@ -173,80 +159,113 @@
             const seenSet = new Set(globalData.map(d => `${d.number}-${d.otp}`));
 
             lines.forEach(line => {
-                const trimmed = line.trim();
-                if (!trimmed) return;
+                const originalLine = line.trim();
+                if (!originalLine) return;
 
-                // 1. Language Normalization (Basic)
-                let normalizedText = trimmed.toLowerCase();
+                let number = 'UNKNOWN';
+                let messageText = originalLine;
+
+                // 1. Precise Number Extraction (Handles Format: Number | Message or Number : Message)
+                const delimiterMatch = originalLine.match(/^([+\d][\d\s\-()]{7,18})\s*[:|,\t]\s*(.*)$/);
+                if (delimiterMatch) {
+                    number = delimiterMatch[1].replace(/[\s\-()]/g, '');
+                    messageText = delimiterMatch[2];
+                } else {
+                    // Fallback: Find the first 8+ digit block
+                    const phoneMatch = originalLine.match(/(?:^|\s)([+\d][\d\s\-()]{7,18})(?:\s|$|:)/);
+                    if (phoneMatch) {
+                        number = phoneMatch[1].replace(/[\s\-()]/g, '');
+                        messageText = originalLine.replace(phoneMatch[1], ''); // Strip number from msg
+                    }
+                }
+                
+                if (number !== 'UNKNOWN') number = number.replace(/[^\d+]/g, '');
+
+                // 2. Language Normalization
+                let normalizedText = originalLine.toLowerCase();
                 for (const [key, val] of Object.entries(translationDict)) {
                     normalizedText = normalizedText.replace(new RegExp(key, 'g'), val);
                 }
 
-                // 2. Extract Phone Number (Assume 8-15 digits, optionally with + prefix)
-                const phoneMatch = trimmed.match(/(?:\+?\d{8,15})/);
-                let number = phoneMatch ? phoneMatch[0] : 'UNKNOWN';
+                // 3. OTP Extraction Logic
+                let otp = null;
 
-                // 3. Extract OTP (5 or 6 digits surrounded by boundaries)
-                // Filter out the phone number string itself so we don't parse it as OTP if it happens to be 5-6 digits
-                let textWithoutPhone = trimmed.replace(number, '');
-                let otpMatch = textWithoutPhone.match(/\b(\d{5,6})\b/);
-                let otp = otpMatch ? otpMatch[1] : null;
+                // A. Sanitize false positives (Dates and Times)
+                let safeText = messageText
+                    .replace(/\d{2,4}[-/.]\d{2}[-/.]\d{2,4}/g, ' [DATE] ')
+                    .replace(/\d{2}:\d{2}(:\d{2})?/g, ' [TIME] ');
 
-                if (!otp) return; // Skip lines without OTP
+                // B. Look for explicitly structured OTPs (G-123456, code: 123456, etc.)
+                // (?<!\d) ensures we don't grab the end of a longer number sequence
+                const explicitMatch = safeText.match(/(?:G-|FB-|IG-|code[\s:=]+|is[\s]+)(?<!\d)(\d{5,6})(?!\d)/i);
+                
+                if (explicitMatch) {
+                    otp = explicitMatch[1];
+                } else {
+                    // C. Fallback: Find isolated 5 or 6 digit number
+                    const fallbackMatch = safeText.match(/(?<!\d)(\d{5,6})(?!\d)/);
+                    if (fallbackMatch) {
+                        otp = fallbackMatch[1];
+                    }
+                }
+
+                if (!otp) return; // Skip if absolutely no OTP found
 
                 let originalOtpLength = otp.length;
 
-                // 4. Platform Detection
-                let platform = 'OTHER';
-                if (normalizedText.includes('facebook') || normalizedText.includes('fb') || normalizedText.includes('laz+nxcarhw') || normalizedText.includes('laz+nxcarlw')) {
+                // 4. Smart Platform Detection
+                let platform = 'OTH';
+                if (
+                    normalizedText.includes('facebook') || 
+                    normalizedText.includes('fb') || 
+                    normalizedText.includes('laz+nxcarhw') || 
+                    normalizedText.includes('laz+nxcarlw') ||
+                    safeText.includes('G-')
+                ) {
                     platform = 'FB';
                 } else if (normalizedText.includes('instagram') || normalizedText.includes('ig')) {
                     platform = 'IG';
                 }
 
-                // 5. Apply 5 to 6 conversion if toggled
+                // 5. 5-to-6 Conversion toggle
                 if (originalOtpLength === 5 && convert5to6) {
                     otp = '0' + otp;
-                    originalOtpLength = 6; // Treat as 6-digit now
+                    originalOtpLength = 6;
                 }
 
-                // Determine Category ID
                 const catId = `${platform}${originalOtpLength}`;
 
-                // 6. Duplicate Check
+                // Duplicate Filter
                 const uniqueKey = `${number}-${otp}`;
                 if (removeDupes && seenSet.has(uniqueKey)) return;
-                
                 seenSet.add(uniqueKey);
                 
                 newEntries.push({
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     number: number,
                     otp: otp,
-                    originalLine: trimmed,
+                    originalLine: originalLine,
                     catId: catId
                 });
             });
 
             if (newEntries.length > 0) {
-                saveState(); // Save for undo before mutating
+                saveState();
                 globalData = [...globalData, ...newEntries];
                 renderDashboard();
-                document.getElementById('rawInput').value = ''; // Clear input on success
-                alert(`Successfully extracted ${newEntries.length} items!`);
+                document.getElementById('rawInput').value = '';
             } else {
-                alert("No valid numbers/OTPs found in the provided text.");
+                alert("No valid numbers/OTPs found. Make sure the text format is clear.");
             }
         }
 
-        // --- UI Rendering ---
+        // Dashboard Rendering
         function renderDashboard() {
             const dashboard = document.getElementById('dashboard');
             dashboard.innerHTML = '';
 
             Object.values(CATEGORIES).forEach(cat => {
                 const items = globalData.filter(d => d.catId === cat.id);
-                
                 const card = document.createElement('div');
                 card.className = `cyber-panel flex flex-col h-[400px] rounded-lg border-t-4 border-${cat.color} overflow-hidden`;
                 
@@ -256,7 +275,6 @@
                             ${cat.title} 
                             <span class="bg-${cat.color} text-cyber-dark px-2 py-0.5 rounded text-xs">${items.length}</span>
                         </h3>
-                        <button onclick="deleteCategory('${cat.id}')" class="text-red-500 hover:text-red-400 text-xs border border-red-500 px-2 py-1 rounded" title="Clear Category">🗑️</button>
                     </div>
                     
                     <div class="p-2 grid grid-cols-2 gap-2 border-b border-gray-800 bg-black/40">
@@ -291,14 +309,12 @@
                     </div>
                     ` : ''}
                 `;
-                
                 dashboard.appendChild(card);
             });
         }
 
-        // --- Data Management ---
+        // Data Management
         function saveState() {
-            // Keep last 10 states
             historyStack.push(JSON.stringify(globalData));
             if(historyStack.length > 10) historyStack.shift();
         }
@@ -307,13 +323,11 @@
             if (historyStack.length > 0) {
                 globalData = JSON.parse(historyStack.pop());
                 renderDashboard();
-            } else {
-                alert("Nothing to undo!");
-            }
+            } else { alert("Nothing to undo!"); }
         }
 
         function clearAll() {
-            if(confirm("WARNING: Clear all extracted data? This action can be undone once.")) {
+            if(confirm("Clear all extracted data?")) {
                 saveState();
                 globalData = [];
                 renderDashboard();
@@ -326,100 +340,61 @@
             renderDashboard();
         }
 
-        function deleteCategory(catId) {
-            saveState();
-            globalData = globalData.filter(d => d.catId !== catId);
-            renderDashboard();
-        }
-
         function deleteSelected(catId) {
             const checkboxes = document.querySelectorAll(`.cat-check-${catId}:checked`);
             if (checkboxes.length === 0) return;
-            
             saveState();
             const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
             globalData = globalData.filter(d => !idsToDelete.includes(d.id));
             renderDashboard();
         }
 
-        // --- Export Tools ---
-        function formatOutput(item, format) {
-            switch(format) {
-                case 'num_pipe_otp': return `${item.number}|${item.otp}`;
-                case 'num_space_pipe_otp': return `${item.number} | ${item.otp}`;
-                case 'num_only': return `${item.number}`;
-                case 'otp_only': return `${item.otp}`;
-                default: return `${item.number}|${item.otp}`;
-            }
-        }
-
+        // Export Tools
         function copyCategory(catId) {
             const items = globalData.filter(d => d.catId === catId);
-            if (items.length === 0) {
-                alert("No data to copy in this category.");
-                return;
-            }
+            if (items.length === 0) return alert("No data to copy.");
             
             const format = document.getElementById(`exportFormat_${catId}`).value;
-            const textToCopy = items.map(item => formatOutput(item, format)).join('\n');
+            const textToCopy = items.map(item => {
+                if(format === 'num_pipe_otp') return `${item.number}|${item.otp}`;
+                if(format === 'num_space_pipe_otp') return `${item.number} | ${item.otp}`;
+                if(format === 'num_only') return `${item.number}`;
+                return `${item.otp}`;
+            }).join('\n');
             
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                alert(`Copied ${items.length} items to clipboard!`);
-            }).catch(err => {
-                console.error('Copy failed', err);
-                alert("Copy failed. Check console.");
-            });
+            navigator.clipboard.writeText(textToCopy).then(() => alert(`Copied ${items.length} items!`));
         }
 
         function exportExcel() {
             if (globalData.length === 0) return alert("No data to export!");
-            
             const wb = XLSX.utils.book_new();
-            
             Object.values(CATEGORIES).forEach(cat => {
                 const items = globalData.filter(d => d.catId === cat.id);
                 if (items.length > 0) {
                     const wsData = items.map(item => ({
-                        'Phone Number': item.number,
-                        'OTP Code': item.otp,
-                        'Original Text': item.originalLine
+                        'Phone Number': item.number, 'OTP Code': item.otp, 'Original Text': item.originalLine
                     }));
-                    const ws = XLSX.utils.json_to_sheet(wsData);
-                    // Name sheet based on category title (max 31 chars for excel)
-                    let sheetName = cat.title.replace(/[^a-zA-Z0-9 -]/g, "").substring(0, 31);
-                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), cat.title.replace(/[^a-zA-Z0-9 -]/g, "").substring(0, 31));
                 }
             });
-            
             XLSX.writeFile(wb, "SMS_Extracted_Data.xlsx");
         }
 
         function exportCSV() {
             if (globalData.length === 0) return alert("No data to export!");
-            
-            // For CSV, we put everything in one sheet but add a Category column
             const wsData = globalData.map(item => ({
-                'Category': CATEGORIES[item.catId].title,
-                'Phone Number': item.number,
-                'OTP Code': item.otp,
-                'Original Text': item.originalLine
+                'Category': CATEGORIES[item.catId].title, 'Phone Number': item.number, 'OTP Code': item.otp, 'Original Text': item.originalLine
             }));
-            
-            const ws = XLSX.utils.json_to_sheet(wsData);
-            const csv = XLSX.utils.sheet_to_csv(ws);
-            
+            const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(wsData));
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "SMS_Extracted_Data.csv");
-            link.style.visibility = 'hidden';
+            link.href = URL.createObjectURL(blob);
+            link.download = "SMS_Extracted_Data.csv";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // Init dashboard on load
         renderDashboard();
     </script>
 </body>
