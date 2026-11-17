@@ -7,10 +7,8 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- SheetJS for Excel/CSV parsing and export -->
+    <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <!-- Cyberpunk Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
@@ -33,39 +31,40 @@
         .cyber-panel { background: rgba(18, 20, 29, 0.95); border: 1px solid #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.15); }
         .cyber-input { background: #040508; color: #00ffcc; border: 1px solid #00ffcc; outline: none; }
         .cyber-input:focus { box-shadow: 0 0 8px #00ffcc; }
-        .cyber-btn { background: #00ffcc; color: #090a0f; text-transform: uppercase; font-weight: bold; transition: all 0.2s; }
+        .cyber-btn { background: #00ffcc; color: #090a0f; text-transform: uppercase; font-weight: bold; transition: all 0.2s; cursor: pointer; }
         .cyber-btn:hover { background: #00ccaa; box-shadow: 0 0 12px #00ffcc; }
-        .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; }
+        .cyber-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; border: none; }
+        .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; }
         .cyber-btn-outline:hover { background: #00ffcc; color: #090a0f; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #090a0f; }
         ::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #ff00ff; }
+        
+        /* Loading Animation */
+        .loader { border: 3px solid #040508; border-top: 3px solid #00ffcc; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-6 flex flex-col gap-6">
 
-    <!-- Header -->
     <header class="text-center py-4">
         <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-magenta tracking-widest drop-shadow-[0_0_10px_rgba(0,255,204,0.8)]">
             SMS OTP & NUMBER EXTRACTOR PRO
         </h1>
-        <p class="text-cyber-cyan mt-2 opacity-80">ULTRA-ACCURATE ENGINE // v2.0</p>
+        <p class="text-cyber-cyan mt-2 opacity-80">AI POWERED ENGINE (FREEMODEL API) // v3.0</p>
     </header>
 
-    <!-- Main Controls -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Input Section -->
         <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4 lg:col-span-2">
             <div class="flex justify-between items-end">
-                <h2 class="text-xl font-bold border-b border-cyber-cyan pb-1">DATA INGESTION</h2>
+                <h2 class="text-xl font-bold border-b border-cyber-cyan pb-1">AI DATA INGESTION</h2>
                 <div class="flex gap-4">
                     <label class="flex items-center gap-2 cursor-pointer text-sm">
                         <input type="checkbox" id="toggle5to6" class="accent-cyber-cyan w-4 h-4">
-                        Convert 5-digit to 6-digit (Prepend 0)
+                        Convert 5-digit to 6-digit
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer text-sm">
                         <input type="checkbox" id="toggleDuplicates" class="accent-cyber-magenta w-4 h-4">
@@ -74,27 +73,26 @@
                 </div>
             </div>
             
-            <textarea id="rawInput" rows="6" class="cyber-input w-full p-3 rounded resize-y" placeholder="Paste raw logs... (e.g. +8801700000000 | G-123456 is your Facebook code)"></textarea>
+            <textarea id="rawInput" rows="6" class="cyber-input w-full p-3 rounded resize-y" placeholder="Paste your messy logs here..."></textarea>
             
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3 w-full md:w-auto">
                     <input type="file" id="fileUpload" accept=".txt,.csv,.xlsx,.xls" class="hidden">
-                    <label for="fileUpload" class="cyber-btn-outline px-4 py-2 cursor-pointer rounded w-full text-center">📁 UPLOAD FILE</label>
+                    <label for="fileUpload" class="cyber-btn-outline px-4 py-2 rounded w-full text-center">📁 UPLOAD FILE</label>
                     <span id="fileName" class="text-xs opacity-70 truncate max-w-[150px]">No file selected</span>
                 </div>
-                <button onclick="processData()" class="cyber-btn px-8 py-2 rounded w-full md:w-auto">⚡ EXTRACT & CLASSIFY</button>
+                <button id="extractBtn" onclick="processDataWithAI()" class="cyber-btn px-8 py-2 rounded w-full md:w-auto flex justify-center items-center">
+                    <span id="btnText">⚡ AI EXTRACT & CLASSIFY</span>
+                </button>
             </div>
         </div>
 
-        <!-- Global Actions -->
         <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4">
             <h2 class="text-xl font-bold border-b border-cyber-magenta text-cyber-magenta pb-1">SYSTEM OVERRIDE</h2>
-            
             <div class="flex flex-col gap-3 mt-2">
                 <button onclick="undoDelete()" class="cyber-btn-outline px-4 py-2 rounded border-cyber-magenta text-cyber-magenta hover:bg-cyber-magenta hover:text-cyber-bg w-full">↩️ UNDO LAST DELETE</button>
                 <button onclick="clearAll()" class="cyber-btn-outline px-4 py-2 rounded text-red-500 border-red-500 hover:bg-red-500 hover:text-cyber-bg w-full">🗑️ CLEAR ALL DATA</button>
             </div>
-
             <h3 class="text-sm font-bold mt-4 mb-2 text-cyber-cyan">GLOBAL EXPORT (ALL)</h3>
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="exportExcel()" class="cyber-btn px-2 py-1 text-sm rounded">📊 EXCEL</button>
@@ -103,12 +101,14 @@
         </div>
     </div>
 
-    <!-- Output Dashboard -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard"></div>
 
     <script>
         let globalData = [];
         let historyStack = [];
+
+        const API_URL = "https://freemodel.in/v1/chat/completions";
+        const API_KEY = "fm_live_292d055126110d83f6f926d69deed364";
 
         const CATEGORIES = {
             FB6: { id: 'FB6', title: 'FACEBOOK (6-DIGIT)', color: 'cyber-cyan' },
@@ -119,16 +119,11 @@
             OTH5: { id: 'OTH5', title: 'OTHER (5-DIGIT)', color: 'orange-400' }
         };
 
-        const translationDict = {
-            'codigo': 'code', 'código': 'code', 'kód': 'code', 'رمز': 'code', 'kod': 'code', 'kode': 'code'
-        };
-
-        // File Upload
+        // File Upload Handler
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('fileName').textContent = file.name;
-            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const data = evt.target.result;
@@ -148,118 +143,115 @@
             else reader.readAsBinaryString(file);
         });
 
-        // The Engine
-        function processData() {
-            const rawText = document.getElementById('rawInput').value;
-            const lines = rawText.split('\n');
-            const convert5to6 = document.getElementById('toggle5to6').checked;
-            const removeDupes = document.getElementById('toggleDuplicates').checked;
-            
-            let newEntries = [];
-            const seenSet = new Set(globalData.map(d => `${d.number}-${d.otp}`));
-
-            lines.forEach(line => {
-                const originalLine = line.trim();
-                if (!originalLine) return;
-
-                let number = 'UNKNOWN';
-                let messageText = originalLine;
-
-                // 1. Precise Number Extraction (Handles Format: Number | Message or Number : Message)
-                const delimiterMatch = originalLine.match(/^([+\d][\d\s\-()]{7,18})\s*[:|,\t]\s*(.*)$/);
-                if (delimiterMatch) {
-                    number = delimiterMatch[1].replace(/[\s\-()]/g, '');
-                    messageText = delimiterMatch[2];
-                } else {
-                    // Fallback: Find the first 8+ digit block
-                    const phoneMatch = originalLine.match(/(?:^|\s)([+\d][\d\s\-()]{7,18})(?:\s|$|:)/);
-                    if (phoneMatch) {
-                        number = phoneMatch[1].replace(/[\s\-()]/g, '');
-                        messageText = originalLine.replace(phoneMatch[1], ''); // Strip number from msg
-                    }
-                }
-                
-                if (number !== 'UNKNOWN') number = number.replace(/[^\d+]/g, '');
-
-                // 2. Language Normalization
-                let normalizedText = originalLine.toLowerCase();
-                for (const [key, val] of Object.entries(translationDict)) {
-                    normalizedText = normalizedText.replace(new RegExp(key, 'g'), val);
-                }
-
-                // 3. OTP Extraction Logic
-                let otp = null;
-
-                // A. Sanitize false positives (Dates and Times)
-                let safeText = messageText
-                    .replace(/\d{2,4}[-/.]\d{2}[-/.]\d{2,4}/g, ' [DATE] ')
-                    .replace(/\d{2}:\d{2}(:\d{2})?/g, ' [TIME] ');
-
-                // B. Look for explicitly structured OTPs (G-123456, code: 123456, etc.)
-                // (?<!\d) ensures we don't grab the end of a longer number sequence
-                const explicitMatch = safeText.match(/(?:G-|FB-|IG-|code[\s:=]+|is[\s]+)(?<!\d)(\d{5,6})(?!\d)/i);
-                
-                if (explicitMatch) {
-                    otp = explicitMatch[1];
-                } else {
-                    // C. Fallback: Find isolated 5 or 6 digit number
-                    const fallbackMatch = safeText.match(/(?<!\d)(\d{5,6})(?!\d)/);
-                    if (fallbackMatch) {
-                        otp = fallbackMatch[1];
-                    }
-                }
-
-                if (!otp) return; // Skip if absolutely no OTP found
-
-                let originalOtpLength = otp.length;
-
-                // 4. Smart Platform Detection
-                let platform = 'OTH';
-                if (
-                    normalizedText.includes('facebook') || 
-                    normalizedText.includes('fb') || 
-                    normalizedText.includes('laz+nxcarhw') || 
-                    normalizedText.includes('laz+nxcarlw') ||
-                    safeText.includes('G-')
-                ) {
-                    platform = 'FB';
-                } else if (normalizedText.includes('instagram') || normalizedText.includes('ig')) {
-                    platform = 'IG';
-                }
-
-                // 5. 5-to-6 Conversion toggle
-                if (originalOtpLength === 5 && convert5to6) {
-                    otp = '0' + otp;
-                    originalOtpLength = 6;
-                }
-
-                const catId = `${platform}${originalOtpLength}`;
-
-                // Duplicate Filter
-                const uniqueKey = `${number}-${otp}`;
-                if (removeDupes && seenSet.has(uniqueKey)) return;
-                seenSet.add(uniqueKey);
-                
-                newEntries.push({
-                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    number: number,
-                    otp: otp,
-                    originalLine: originalLine,
-                    catId: catId
-                });
-            });
-
-            if (newEntries.length > 0) {
-                saveState();
-                globalData = [...globalData, ...newEntries];
-                renderDashboard();
-                document.getElementById('rawInput').value = '';
+        // Toggle Button State
+        function setButtonLoading(isLoading) {
+            const btn = document.getElementById('extractBtn');
+            const btnText = document.getElementById('btnText');
+            if (isLoading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loader"></div> PROCESSING WITH AI...';
             } else {
-                alert("No valid numbers/OTPs found. Make sure the text format is clear.");
+                btn.disabled = false;
+                btnText.innerHTML = '⚡ AI EXTRACT & CLASSIFY';
             }
         }
 
-        // Dashboard Rendering
+        // --- AI PROCESSING LOGIC ---
+        async function processDataWithAI() {
+            const rawText = document.getElementById('rawInput').value.trim();
+            if (!rawText) return alert("Please paste or upload some data first.");
+
+            setButtonLoading(true);
+            const convert5to6 = document.getElementById('toggle5to6').checked;
+            const removeDupes = document.getElementById('toggleDuplicates').checked;
+            const seenSet = new Set(globalData.map(d => `${d.number}-${d.otp}`));
+
+            // System prompt instructing the AI to return strictly JSON
+            const systemPrompt = `You are a highly accurate data extraction API. 
+Your task is to analyze raw SMS/CDR logs and extract the target phone number and the OTP code.
+The phone number might be formatted weirdly. Strip all spaces, dashes, and keep the numbers.
+The OTP is a 5 or 6 digit number.
+Determine the platform based on the message: If it mentions Facebook, laz+nxcarhw, or uses 'G-', it's 'FB'. If Instagram or IG, it's 'IG'. Otherwise 'OTH'.
+RESPOND ONLY WITH A VALID JSON ARRAY OF OBJECTS. Do not use markdown blocks.
+Format:
+[
+  {"number": "8801700000000", "otp": "123456", "platform": "FB", "originalLine": "..."}
+]`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-3.5-turbo", // You can change this to another model supported by freemodel.in if needed
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: rawText }
+                        ],
+                        temperature: 0.1 // Low temperature for consistent JSON output
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                
+                const responseData = await response.json();
+                let aiContent = responseData.choices[0].message.content.trim();
+                
+                // Clean up any markdown code blocks if the AI accidentally adds them
+                if (aiContent.startsWith("```json")) aiContent = aiContent.replace(/```json/g, "").replace(/```/g, "").trim();
+                
+                const extractedItems = JSON.parse(aiContent);
+                let newEntries = [];
+
+                extractedItems.forEach(item => {
+                    if (!item.number || !item.otp) return;
+                    
+                    let otp = String(item.otp);
+                    let originalOtpLength = otp.length;
+
+                    // Convert 5 to 6 toggle
+                    if (originalOtpLength === 5 && convert5to6) {
+                        otp = '0' + otp;
+                        originalOtpLength = 6;
+                    }
+
+                    const catId = `${item.platform}${originalOtpLength}`;
+
+                    // Duplicate Filter
+                    const uniqueKey = `${item.number}-${otp}`;
+                    if (removeDupes && seenSet.has(uniqueKey)) return;
+                    seenSet.add(uniqueKey);
+                    
+                    newEntries.push({
+                        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                        number: item.number,
+                        otp: otp,
+                        originalLine: item.originalLine,
+                        catId: CATEGORIES[catId] ? catId : `OTH${originalOtpLength}`
+                    });
+                });
+
+                if (newEntries.length > 0) {
+                    saveState();
+                    globalData = [...globalData, ...newEntries];
+                    renderDashboard();
+                    document.getElementById('rawInput').value = '';
+                } else {
+                    alert("AI could not find valid OTP data in this text.");
+                }
+
+            } catch (error) {
+                console.error("AI Extraction Error:", error);
+                alert("Failed to extract data using AI. Please check console for errors or try again.");
+            } finally {
+                setButtonLoading(false);
+            }
+        }
+
+        // --- DASHBOARD AND UTILS ---
         function renderDashboard() {
             const dashboard = document.getElementById('dashboard');
             dashboard.innerHTML = '';
@@ -313,7 +305,6 @@
             });
         }
 
-        // Data Management
         function saveState() {
             historyStack.push(JSON.stringify(globalData));
             if(historyStack.length > 10) historyStack.shift();
@@ -349,11 +340,9 @@
             renderDashboard();
         }
 
-        // Export Tools
         function copyCategory(catId) {
             const items = globalData.filter(d => d.catId === catId);
             if (items.length === 0) return alert("No data to copy.");
-            
             const format = document.getElementById(`exportFormat_${catId}`).value;
             const textToCopy = items.map(item => {
                 if(format === 'num_pipe_otp') return `${item.number}|${item.otp}`;
@@ -361,7 +350,6 @@
                 if(format === 'num_only') return `${item.number}`;
                 return `${item.otp}`;
             }).join('\n');
-            
             navigator.clipboard.writeText(textToCopy).then(() => alert(`Copied ${items.length} items!`));
         }
 
