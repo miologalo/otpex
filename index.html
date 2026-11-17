@@ -7,8 +7,10 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS -->
+    
+    <!-- SheetJS for Excel/CSV parsing and export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <!-- Cyberpunk Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
@@ -32,23 +34,25 @@
         .cyber-input { background: #040508; color: #00ffcc; border: 1px solid #00ffcc; outline: none; }
         .cyber-input:focus { box-shadow: 0 0 8px #00ffcc; }
         .cyber-btn { background: #00ffcc; color: #090a0f; text-transform: uppercase; font-weight: bold; transition: all 0.2s; cursor: pointer; }
-        .cyber-btn:hover { background: #00ccaa; box-shadow: 0 0 12px #00ffcc; }
-        .cyber-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; border: none; }
-        .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; }
+        .cyber-btn:hover:not(:disabled) { background: #00ccaa; box-shadow: 0 0 12px #00ffcc; }
+        .cyber-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; border: 1px solid #444; }
+        .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; cursor: pointer; transition: all 0.2s; }
         .cyber-btn-outline:hover { background: #00ffcc; color: #090a0f; }
         
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #090a0f; }
         ::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #ff00ff; }
         
-        /* Loading Animation */
+        /* Loading Animation for AI */
         .loader { border: 3px solid #040508; border-top: 3px solid #00ffcc; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-6 flex flex-col gap-6">
 
+    <!-- Header -->
     <header class="text-center py-4">
         <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-magenta tracking-widest drop-shadow-[0_0_10px_rgba(0,255,204,0.8)]">
             SMS OTP & NUMBER EXTRACTOR PRO
@@ -56,15 +60,17 @@
         <p class="text-cyber-cyan mt-2 opacity-80">AI POWERED ENGINE (FREEMODEL API) // v3.0</p>
     </header>
 
+    <!-- Main Controls -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
+        <!-- Input Section -->
         <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4 lg:col-span-2">
             <div class="flex justify-between items-end">
                 <h2 class="text-xl font-bold border-b border-cyber-cyan pb-1">AI DATA INGESTION</h2>
                 <div class="flex gap-4">
                     <label class="flex items-center gap-2 cursor-pointer text-sm">
                         <input type="checkbox" id="toggle5to6" class="accent-cyber-cyan w-4 h-4">
-                        Convert 5-digit to 6-digit
+                        Convert 5-digit to 6-digit (Prepend 0)
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer text-sm">
                         <input type="checkbox" id="toggleDuplicates" class="accent-cyber-magenta w-4 h-4">
@@ -87,12 +93,15 @@
             </div>
         </div>
 
+        <!-- Global Actions -->
         <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4">
             <h2 class="text-xl font-bold border-b border-cyber-magenta text-cyber-magenta pb-1">SYSTEM OVERRIDE</h2>
+            
             <div class="flex flex-col gap-3 mt-2">
                 <button onclick="undoDelete()" class="cyber-btn-outline px-4 py-2 rounded border-cyber-magenta text-cyber-magenta hover:bg-cyber-magenta hover:text-cyber-bg w-full">↩️ UNDO LAST DELETE</button>
                 <button onclick="clearAll()" class="cyber-btn-outline px-4 py-2 rounded text-red-500 border-red-500 hover:bg-red-500 hover:text-cyber-bg w-full">🗑️ CLEAR ALL DATA</button>
             </div>
+
             <h3 class="text-sm font-bold mt-4 mb-2 text-cyber-cyan">GLOBAL EXPORT (ALL)</h3>
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="exportExcel()" class="cyber-btn px-2 py-1 text-sm rounded">📊 EXCEL</button>
@@ -101,12 +110,16 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard"></div>
+    <!-- Output Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard">
+        <!-- Dashboard cards will be injected here via JS -->
+    </div>
 
     <script>
         let globalData = [];
         let historyStack = [];
 
+        // API CONFIGURATION
         const API_URL = "https://freemodel.in/v1/chat/completions";
         const API_KEY = "fm_live_292d055126110d83f6f926d69deed364";
 
@@ -119,11 +132,12 @@
             OTH5: { id: 'OTH5', title: 'OTHER (5-DIGIT)', color: 'orange-400' }
         };
 
-        // File Upload Handler
+        // --- File Upload Handling ---
         document.getElementById('fileUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('fileName').textContent = file.name;
+            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const data = evt.target.result;
@@ -134,7 +148,9 @@
                     let combinedText = '';
                     workbook.SheetNames.forEach(sheetName => {
                         const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
-                        xlData.forEach(row => { combinedText += row.join(' ') + '\n'; });
+                        xlData.forEach(row => {
+                            combinedText += row.join(' ') + '\n';
+                        });
                     });
                     document.getElementById('rawInput').value += (document.getElementById('rawInput').value ? '\n' : '') + combinedText;
                 }
@@ -143,7 +159,6 @@
             else reader.readAsBinaryString(file);
         });
 
-        // Toggle Button State
         function setButtonLoading(isLoading) {
             const btn = document.getElementById('extractBtn');
             const btnText = document.getElementById('btnText');
@@ -166,11 +181,10 @@
             const removeDupes = document.getElementById('toggleDuplicates').checked;
             const seenSet = new Set(globalData.map(d => `${d.number}-${d.otp}`));
 
-            // System prompt instructing the AI to return strictly JSON
             const systemPrompt = `You are a highly accurate data extraction API. 
 Your task is to analyze raw SMS/CDR logs and extract the target phone number and the OTP code.
-The phone number might be formatted weirdly. Strip all spaces, dashes, and keep the numbers.
-The OTP is a 5 or 6 digit number.
+The phone number might be formatted weirdly. Strip all spaces, dashes, and keep the numbers. 
+The OTP is a 5 or 6 digit number. Ignore dates, times, and transaction IDs.
 Determine the platform based on the message: If it mentions Facebook, laz+nxcarhw, or uses 'G-', it's 'FB'. If Instagram or IG, it's 'IG'. Otherwise 'OTH'.
 RESPOND ONLY WITH A VALID JSON ARRAY OF OBJECTS. Do not use markdown blocks.
 Format:
@@ -186,12 +200,12 @@ Format:
                         'Authorization': `Bearer ${API_KEY}`
                     },
                     body: JSON.stringify({
-                        model: "gpt-3.5-turbo", // You can change this to another model supported by freemodel.in if needed
+                        model: "claude-opus-4.8", 
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: rawText }
                         ],
-                        temperature: 0.1 // Low temperature for consistent JSON output
+                        temperature: 0.1 
                     })
                 });
 
@@ -200,8 +214,9 @@ Format:
                 const responseData = await response.json();
                 let aiContent = responseData.choices[0].message.content.trim();
                 
-                // Clean up any markdown code blocks if the AI accidentally adds them
+                // Clean up any markdown code blocks
                 if (aiContent.startsWith("```json")) aiContent = aiContent.replace(/```json/g, "").replace(/```/g, "").trim();
+                if (aiContent.startsWith("```")) aiContent = aiContent.replace(/```/g, "").trim();
                 
                 const extractedItems = JSON.parse(aiContent);
                 let newEntries = [];
@@ -245,19 +260,20 @@ Format:
 
             } catch (error) {
                 console.error("AI Extraction Error:", error);
-                alert("Failed to extract data using AI. Please check console for errors or try again.");
+                alert("Failed to extract data using AI. Please check console for errors or ensure the text is formatted correctly.");
             } finally {
                 setButtonLoading(false);
             }
         }
 
-        // --- DASHBOARD AND UTILS ---
+        // --- UI Rendering ---
         function renderDashboard() {
             const dashboard = document.getElementById('dashboard');
             dashboard.innerHTML = '';
 
             Object.values(CATEGORIES).forEach(cat => {
                 const items = globalData.filter(d => d.catId === cat.id);
+                
                 const card = document.createElement('div');
                 card.className = `cyber-panel flex flex-col h-[400px] rounded-lg border-t-4 border-${cat.color} overflow-hidden`;
                 
@@ -301,10 +317,12 @@ Format:
                     </div>
                     ` : ''}
                 `;
+                
                 dashboard.appendChild(card);
             });
         }
 
+        // --- Data Management ---
         function saveState() {
             historyStack.push(JSON.stringify(globalData));
             if(historyStack.length > 10) historyStack.shift();
@@ -314,11 +332,13 @@ Format:
             if (historyStack.length > 0) {
                 globalData = JSON.parse(historyStack.pop());
                 renderDashboard();
-            } else { alert("Nothing to undo!"); }
+            } else {
+                alert("Nothing to undo!");
+            }
         }
 
         function clearAll() {
-            if(confirm("Clear all extracted data?")) {
+            if(confirm("WARNING: Clear all extracted data? This action can be undone once.")) {
                 saveState();
                 globalData = [];
                 renderDashboard();
@@ -334,50 +354,83 @@ Format:
         function deleteSelected(catId) {
             const checkboxes = document.querySelectorAll(`.cat-check-${catId}:checked`);
             if (checkboxes.length === 0) return;
+            
             saveState();
             const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
             globalData = globalData.filter(d => !idsToDelete.includes(d.id));
             renderDashboard();
         }
 
+        // --- Export Tools ---
+        function formatOutput(item, format) {
+            switch(format) {
+                case 'num_pipe_otp': return `${item.number}|${item.otp}`;
+                case 'num_space_pipe_otp': return `${item.number} | ${item.otp}`;
+                case 'num_only': return `${item.number}`;
+                case 'otp_only': return `${item.otp}`;
+                default: return `${item.number}|${item.otp}`;
+            }
+        }
+
         function copyCategory(catId) {
             const items = globalData.filter(d => d.catId === catId);
-            if (items.length === 0) return alert("No data to copy.");
+            if (items.length === 0) {
+                alert("No data to copy in this category.");
+                return;
+            }
+            
             const format = document.getElementById(`exportFormat_${catId}`).value;
-            const textToCopy = items.map(item => {
-                if(format === 'num_pipe_otp') return `${item.number}|${item.otp}`;
-                if(format === 'num_space_pipe_otp') return `${item.number} | ${item.otp}`;
-                if(format === 'num_only') return `${item.number}`;
-                return `${item.otp}`;
-            }).join('\n');
-            navigator.clipboard.writeText(textToCopy).then(() => alert(`Copied ${items.length} items!`));
+            const textToCopy = items.map(item => formatOutput(item, format)).join('\n');
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`Copied ${items.length} items to clipboard!`);
+            }).catch(err => {
+                console.error('Copy failed', err);
+                alert("Copy failed. Check console.");
+            });
         }
 
         function exportExcel() {
             if (globalData.length === 0) return alert("No data to export!");
+            
             const wb = XLSX.utils.book_new();
+            
             Object.values(CATEGORIES).forEach(cat => {
                 const items = globalData.filter(d => d.catId === cat.id);
                 if (items.length > 0) {
                     const wsData = items.map(item => ({
-                        'Phone Number': item.number, 'OTP Code': item.otp, 'Original Text': item.originalLine
+                        'Phone Number': item.number,
+                        'OTP Code': item.otp,
+                        'Original Text': item.originalLine
                     }));
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), cat.title.replace(/[^a-zA-Z0-9 -]/g, "").substring(0, 31));
+                    const ws = XLSX.utils.json_to_sheet(wsData);
+                    let sheetName = cat.title.replace(/[^a-zA-Z0-9 -]/g, "").substring(0, 31);
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
                 }
             });
+            
             XLSX.writeFile(wb, "SMS_Extracted_Data.xlsx");
         }
 
         function exportCSV() {
             if (globalData.length === 0) return alert("No data to export!");
+            
             const wsData = globalData.map(item => ({
-                'Category': CATEGORIES[item.catId].title, 'Phone Number': item.number, 'OTP Code': item.otp, 'Original Text': item.originalLine
+                'Category': CATEGORIES[item.catId].title,
+                'Phone Number': item.number,
+                'OTP Code': item.otp,
+                'Original Text': item.originalLine
             }));
-            const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(wsData));
+            
+            const ws = XLSX.utils.json_to_sheet(wsData);
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "SMS_Extracted_Data.csv";
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "SMS_Extracted_Data.csv");
+            link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
