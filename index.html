@@ -4,40 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS OTP & Number Extractor Pro</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for reading/writing Excel (.xlsx, .xls, .csv) files -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    
+    <!-- SheetJS for Excel/CSV parsing and export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Cyberpunk Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
+                    fontFamily: { mono: ['"Share Tech Mono"', 'monospace'] },
                     colors: {
-                        cyber: {
-                            bg: '#0a0b10',
-                            card: '#12151f',
-                            input: '#0d0f17',
-                            border: '#1e2436',
-                            cyan: '#00f0ff',
-                            purple: '#9d4edd',
-                        }
-                    },
-                    boxShadow: {
-                        'neon-cyan': '0 0 15px rgba(0, 240, 255, 0.25)',
-                        'neon-purple': '0 0 15px rgba(157, 78, 221, 0.25)',
-                        'neon-combo': '0 0 20px rgba(0, 240, 255, 0.15), 0 0 30px rgba(157, 78, 221, 0.15)',
+                        cyber: { bg: '#090a0f', panel: '#12141d', cyan: '#00ffcc', magenta: '#ff00ff', dark: '#040508' }
                     }
                 }
             }
@@ -45,996 +29,398 @@
     </script>
 
     <style>
-        body {
-            background-color: #0a0b10;
-            color: #e2e8f0;
-            background-image: 
-                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.06) 0%, transparent 40%);
-            min-height: 100vh;
-        }
-
-        /* Custom subtle scrollbars */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0d0f17;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #232a40;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #00f0ff80;
-        }
-
-        .glow-border:focus-within {
-            border-color: rgba(0, 240, 255, 0.5);
-            box-shadow: 0 0 18px rgba(0, 240, 255, 0.15);
-        }
-
-        .btn-gradient {
-            background: linear-gradient(135deg, #00f0ff 0%, #9d4edd 100%);
-        }
-        .btn-gradient:hover {
-            background: linear-gradient(135deg, #33f3ff 0%, #b06ae8 100%);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
-        }
+        body { font-family: 'Share Tech Mono', monospace; background-color: #090a0f; color: #00ffcc; }
+        .cyber-panel { background: rgba(18, 20, 29, 0.95); border: 1px solid #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.15); }
+        .cyber-panel-magenta { border: 1px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.15); }
+        .cyber-input { background: #040508; color: #00ffcc; border: 1px solid #00ffcc; outline: none; }
+        .cyber-input:focus { box-shadow: 0 0 8px #00ffcc; }
+        .cyber-btn { background: #00ffcc; color: #090a0f; text-transform: uppercase; font-weight: bold; transition: all 0.2s; }
+        .cyber-btn:hover { background: #00ccaa; box-shadow: 0 0 12px #00ffcc; }
+        .cyber-btn-outline { background: transparent; color: #00ffcc; border: 1px solid #00ffcc; }
+        .cyber-btn-outline:hover { background: #00ffcc; color: #090a0f; }
+        .cyber-btn-magenta { background: #ff00ff; color: #090a0f; }
+        .cyber-btn-magenta:hover { background: #cc00cc; box-shadow: 0 0 12px #ff00ff; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #090a0f; }
+        ::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff00ff; }
     </style>
 </head>
-<body class="antialiased selection:bg-cyan-500/30 selection:text-cyan-200 flex flex-col">
+<body class="min-h-screen p-4 md:p-6 flex flex-col gap-6">
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
-        <div class="bg-[#161b29] border border-cyan-500/50 text-cyan-300 px-4 py-3 rounded-xl shadow-neon-cyan flex items-center gap-2.5 text-sm font-medium">
-            <i data-lucide="check-circle-2" class="w-4 h-4 text-cyan-400"></i>
-            <span id="toastMessage">Copied to clipboard!</span>
+    <!-- Header -->
+    <header class="text-center py-4">
+        <h1 class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-magenta tracking-widest drop-shadow-[0_0_10px_rgba(0,255,204,0.8)]">
+            SMS OTP & NUMBER EXTRACTOR PRO
+        </h1>
+        <p class="text-cyber-cyan mt-2 opacity-80">CYBERPUNK EDITION // v1.0</p>
+    </header>
+
+    <!-- Main Controls -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Input Section -->
+        <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4 lg:col-span-2">
+            <div class="flex justify-between items-end">
+                <h2 class="text-xl font-bold border-b border-cyber-cyan pb-1">DATA INGESTION</h2>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="checkbox" id="toggle5to6" class="accent-cyber-cyan w-4 h-4">
+                        Convert 5-digit to 6-digit (Prepend 0)
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                        <input type="checkbox" id="toggleDuplicates" class="accent-cyber-magenta w-4 h-4">
+                        Remove Duplicates
+                    </label>
+                </div>
+            </div>
+            
+            <textarea id="rawInput" rows="6" class="cyber-input w-full p-3 rounded resize-y" placeholder="Paste raw SMS text logs here... (e.g. +1234567890 : Your Facebook code is 123456)"></textarea>
+            
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <input type="file" id="fileUpload" accept=".txt,.csv,.xlsx,.xls" class="hidden">
+                    <label for="fileUpload" class="cyber-btn-outline px-4 py-2 cursor-pointer rounded w-full text-center">📁 UPLOAD FILE</label>
+                    <span id="fileName" class="text-xs opacity-70 truncate max-w-[150px]">No file selected</span>
+                </div>
+                <button onclick="processData()" class="cyber-btn px-8 py-2 rounded w-full md:w-auto">⚡ EXTRACT & CLASSIFY</button>
+            </div>
+        </div>
+
+        <!-- Global Actions -->
+        <div class="cyber-panel p-5 rounded-lg flex flex-col gap-4">
+            <h2 class="text-xl font-bold border-b border-cyber-magenta text-cyber-magenta pb-1">SYSTEM OVERRIDE</h2>
+            
+            <div class="flex flex-col gap-3 mt-2">
+                <button onclick="undoDelete()" class="cyber-btn-outline px-4 py-2 rounded border-cyber-magenta text-cyber-magenta hover:bg-cyber-magenta hover:text-cyber-bg w-full">↩️ UNDO LAST DELETE</button>
+                <button onclick="clearAll()" class="cyber-btn-outline px-4 py-2 rounded text-red-500 border-red-500 hover:bg-red-500 hover:text-cyber-bg w-full">🗑️ CLEAR ALL DATA</button>
+            </div>
+
+            <h3 class="text-sm font-bold mt-4 mb-2 text-cyber-cyan">GLOBAL EXPORT (ALL)</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="exportExcel()" class="cyber-btn px-2 py-1 text-sm rounded">📊 EXPORT EXCEL</button>
+                <button onclick="exportCSV()" class="cyber-btn px-2 py-1 text-sm rounded">📄 EXPORT CSV</button>
+            </div>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="border-b border-[#1e2436] bg-[#0a0b10]/80 backdrop-blur-md sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/40 flex items-center justify-center shadow-neon-cyan">
-                    <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
-                </div>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                        SMS OTP & Number Extractor <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">PRO</span>
-                    </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">Excel & TXT Bulk Parser &bull; 5/6-Digit & Platform Classifier</p>
-                </div>
-            </div>
-
-            <!-- Status Indicator -->
-            <div class="flex items-center gap-2 bg-[#12151f] border border-[#1e2436] px-3 py-1.5 rounded-full">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span class="text-xs font-mono text-slate-300">MULTI-ENGINE READY</span>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-
-        <!-- TOP INPUT SECTION -->
-        <section class="bg-[#12151f] border border-[#1e2436] rounded-2xl p-4 sm:p-6 shadow-xl transition-all duration-200 glow-border">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
-                    <label for="rawInput" class="text-sm font-semibold text-slate-200">Raw SMS Logs or File Upload (.TXT / .XLSX / .XLS / .CSV)</label>
-                </div>
-
-                <!-- Input Action Toolbar -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <button id="btnPaste" type="button" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1a1f2e] hover:bg-[#232a3d] text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/50 transition flex items-center gap-1.5 cursor-pointer">
-                        <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i>
-                        Paste
-                    </button>
-                    <button id="btnSample" type="button" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1a1f2e] hover:bg-[#232a3d] text-purple-300 border border-purple-500/20 hover:border-purple-500/50 transition flex items-center gap-1.5 cursor-pointer">
-                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                        Load Mixed Sample
-                    </button>
-                    <button id="btnClear" type="button" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1a1f2e] hover:bg-rose-950/50 text-slate-300 hover:text-rose-300 border border-[#2a324a] hover:border-rose-500/40 transition flex items-center gap-1.5 cursor-pointer">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- Drag & Drop File Upload Zone -->
-            <div id="dropZone" class="mb-4 border-2 border-dashed border-[#242c42] hover:border-cyan-500/50 bg-[#0d0f17]/80 rounded-xl p-4 transition-all cursor-pointer group">
-                <input type="file" id="fileInput" accept=".txt,.csv,.xlsx,.xls" multiple class="hidden">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 text-center sm:text-left">
-                        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                            <i data-lucide="file-spreadsheet" class="w-5 h-5 text-cyan-400"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm font-medium text-slate-200">
-                                Drag & drop <span class="text-cyan-400 font-semibold">.xlsx, .xls, .csv, or .txt</span> files here, or <span class="underline text-cyan-300">browse files</span>
-                            </p>
-                            <p id="fileStatusText" class="text-[11px] text-slate-500 mt-0.5">
-                                Supports multi-sheet Excel workbooks & bulk text dumps
-                            </p>
-                        </div>
-                    </div>
-                    <span class="px-3 py-1.5 rounded-lg bg-[#161b29] border border-[#263047] text-xs font-mono text-slate-300 group-hover:border-cyan-500/40 group-hover:text-cyan-300 transition shrink-0">
-                        Select File
-                    </span>
-                </div>
-            </div>
-
-            <!-- Input Textarea -->
-            <div class="relative">
-                <textarea 
-                    id="rawInput" 
-                    rows="5" 
-                    placeholder="Paste raw SMS logs here (Facebook, Instagram, Other — single-line concatenated dumps or multi-line logs)..."
-                    class="w-full bg-[#0d0f17] border border-[#1e2436] focus:border-cyan-500/60 focus:outline-none rounded-xl p-3.5 font-mono text-xs sm:text-sm text-slate-200 placeholder-slate-600 leading-relaxed resize-y transition"
-                ></textarea>
-            </div>
-
-            <!-- Controls & Extract Trigger -->
-            <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex flex-wrap items-center gap-5">
-                    <!-- Deduplication Toggle -->
-                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none group">
-                        <div class="relative">
-                            <input type="checkbox" id="dedupeToggle" class="sr-only peer" checked>
-                            <div class="w-9 h-5 bg-[#1e2436] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
-                        </div>
-                        <span class="text-xs sm:text-sm text-slate-300 group-hover:text-white transition">Remove duplicate pairs</span>
-                    </label>
-
-                    <!-- Optional 5-Digit to 6-Digit Pad Toggle -->
-                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none group" title="Adds a leading 0 to 5-digit OTPs if you need all OTPs normalized to 6 digits">
-                        <div class="relative">
-                            <input type="checkbox" id="pad5To6Toggle" class="sr-only peer">
-                            <div class="w-9 h-5 bg-[#1e2436] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                        </div>
-                        <span class="text-xs sm:text-sm text-slate-300 group-hover:text-amber-300 transition">Convert 5-digit &rarr; 6-digit (leading 0)</span>
-                    </label>
-                </div>
-
-                <!-- Prominent Extract Button -->
-                <button id="btnExtract" type="button" class="btn-gradient text-slate-950 font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg cursor-pointer shrink-0">
-                    <i data-lucide="zap" class="w-4 h-4 fill-slate-950"></i>
-                    Extract & Classify
-                </button>
-            </div>
-        </section>
-
-        <!-- LIVE ANALYTICS / SUMMARY STATS BAR -->
-        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div class="bg-[#12151f] border border-[#1e2436] rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-slate-400">Total Extracted</p>
-                <p id="statTotal" class="text-xl font-bold font-mono text-white mt-1">0</p>
-            </div>
-            <div class="bg-[#12151f] border border-blue-500/20 rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-blue-400">Facebook</p>
-                <p id="statFacebook" class="text-xl font-bold font-mono text-blue-300 mt-1">0</p>
-            </div>
-            <div class="bg-[#12151f] border border-pink-500/20 rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-pink-400">Instagram</p>
-                <p id="statInstagram" class="text-xl font-bold font-mono text-pink-300 mt-1">0</p>
-            </div>
-            <div class="bg-[#12151f] border border-slate-500/20 rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-slate-400">Other Apps</p>
-                <p id="statOther" class="text-xl font-bold font-mono text-slate-200 mt-1">0</p>
-            </div>
-            <div class="bg-[#12151f] border border-emerald-500/25 rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-emerald-400">6-Digit OTP</p>
-                <p id="stat6Digit" class="text-xl font-bold font-mono text-emerald-300 mt-1">0</p>
-            </div>
-            <div class="bg-[#12151f] border border-amber-500/25 rounded-xl p-3.5">
-                <p class="text-[11px] font-mono uppercase text-amber-400">5-Digit OTP</p>
-                <p id="stat5Digit" class="text-xl font-bold font-mono text-amber-300 mt-1">0</p>
-            </div>
-        </section>
-
-        <!-- CATEGORIZED SPLIT CARDS SECTION (Separate Facebook / Instagram / Other + 6-Digit / 5-Digit) -->
-        <section class="bg-[#12151f] border border-[#1e2436] rounded-2xl p-4 sm:p-6 shadow-xl">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
-                    <h2 class="text-sm sm:text-base font-semibold text-white">Separated by Platform & OTP Digits (6-Digit vs 5-Digit)</h2>
-                </div>
-                <span class="text-xs font-mono text-slate-400">Click "Copy" on any card to grab that specific batch</span>
-            </div>
-
-            <!-- 6 Categorized Cards Grid -->
-            <div id="categoryCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Populated dynamically via JS -->
-            </div>
-        </section>
-
-        <!-- UNIFIED FILTERED OUTPUT & TABLE SECTION -->
-        <section class="bg-[#12151f] border border-[#1e2436] rounded-2xl p-4 sm:p-6 shadow-xl">
-            <!-- Dual-Axis Filter Bar -->
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 mb-4 border-b border-[#1e2436]">
-                <!-- Platform Filter Tabs -->
-                <div class="space-y-1.5">
-                    <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Filter by Platform</span>
-                    <div class="flex flex-wrap items-center gap-1.5 bg-[#0d0f17] p-1 rounded-xl border border-[#1e2436]">
-                        <button type="button" data-platform="ALL" class="platform-tab active px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cursor-pointer">
-                            All Platforms
-                        </button>
-                        <button type="button" data-platform="Facebook" class="platform-tab px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-blue-300 border border-transparent cursor-pointer">
-                            Facebook
-                        </button>
-                        <button type="button" data-platform="Instagram" class="platform-tab px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-pink-300 border border-transparent cursor-pointer">
-                            Instagram
-                        </button>
-                        <button type="button" data-platform="Other" class="platform-tab px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                            Other
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Digit Length Filter Tabs -->
-                <div class="space-y-1.5">
-                    <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Filter by OTP Length</span>
-                    <div class="flex flex-wrap items-center gap-1.5 bg-[#0d0f17] p-1 rounded-xl border border-[#1e2436]">
-                        <button type="button" data-digits="ALL" class="digit-tab active px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition bg-purple-500/20 text-purple-300 border border-purple-500/40 cursor-pointer">
-                            All Digits
-                        </button>
-                        <button type="button" data-digits="6" class="digit-tab px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-emerald-300 border border-transparent cursor-pointer">
-                            6-Digit Only
-                        </button>
-                        <button type="button" data-digits="5" class="digit-tab px-3 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-amber-300 border border-transparent cursor-pointer">
-                            5-Digit Only
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Output Line Format Selector -->
-                <div class="space-y-1.5">
-                    <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Line Format</span>
-                    <div class="flex flex-wrap items-center gap-1.5 bg-[#0d0f17] p-1 rounded-xl border border-[#1e2436]">
-                        <button type="button" data-format="pipe" class="format-tab active px-2.5 py-1.5 text-xs font-mono font-medium rounded-lg transition bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cursor-pointer">
-                            number|otp
-                        </button>
-                        <button type="button" data-format="spaced-pipe" class="format-tab px-2.5 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                            number | otp
-                        </button>
-                        <button type="button" data-format="number-only" class="format-tab px-2.5 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                            Number
-                        </button>
-                        <button type="button" data-format="otp-only" class="format-tab px-2.5 py-1.5 text-xs font-mono font-medium rounded-lg transition text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                            OTP
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtered Output Header -->
-            <div class="flex items-center justify-between gap-3 mb-3">
-                <div class="flex items-center gap-2.5">
-                    <i data-lucide="list-checks" class="w-4 h-4 text-purple-400"></i>
-                    <h3 class="text-sm font-semibold text-slate-200">Filtered Bulk Output</h3>
-                    <span id="countBadge" class="px-2.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                        0 Showing
-                    </span>
-                </div>
-            </div>
-
-            <!-- Read-only Output Textarea -->
-            <div class="relative">
-                <textarea 
-                    id="formattedOutput" 
-                    rows="6" 
-                    readonly 
-                    placeholder="Filtered number|otp output will appear here..."
-                    class="w-full bg-[#0d0f17] border border-[#1e2436] focus:border-purple-500/50 focus:outline-none rounded-xl p-3.5 font-mono text-xs sm:text-sm text-cyan-300 placeholder-slate-600 leading-relaxed resize-y"
-                ></textarea>
-            </div>
-
-            <!-- Output Action Buttons -->
-            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p id="statusHint" class="text-xs text-slate-500 font-mono">Ready to parse logs or Excel/TXT files</p>
-
-                <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                    <button id="btnCopyAll" type="button" class="flex-1 sm:flex-initial px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i data-lucide="copy" class="w-4 h-4"></i>
-                        <span>Copy Filtered</span>
-                    </button>
-                    <button id="btnDownloadTxt" type="button" class="flex-1 sm:flex-initial px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i data-lucide="file-text" class="w-4 h-4"></i>
-                        <span>Export .TXT</span>
-                    </button>
-                    <button id="btnDownloadXlsx" type="button" class="flex-1 sm:flex-initial px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        <span>Export Multi-Sheet .XLSX</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Secondary Collapsible Table Preview -->
-            <div class="mt-6 pt-5 border-t border-[#1e2436]">
-                <button id="toggleTableBtn" type="button" class="w-full flex items-center justify-between text-left text-xs sm:text-sm font-medium text-slate-300 hover:text-cyan-300 transition py-1 cursor-pointer">
-                    <span class="flex items-center gap-2">
-                        <i data-lucide="table" class="w-4 h-4 text-cyan-400"></i>
-                        Detailed Table View (Platform, Digit Length & Individual Copy)
-                    </span>
-                    <i id="tableChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 rotate-180"></i>
-                </button>
-
-                <div id="tableWrapper" class="mt-3 overflow-x-auto rounded-xl border border-[#1e2436] bg-[#0d0f17]">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-[#1e2436] bg-[#141824] text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                                <th class="py-2.5 px-4 w-12">#</th>
-                                <th class="py-2.5 px-4">Platform</th>
-                                <th class="py-2.5 px-4">Phone Number</th>
-                                <th class="py-2.5 px-4">OTP Code</th>
-                                <th class="py-2.5 px-4">Digits</th>
-                                <th class="py-2.5 px-4 text-right">Quick Copy</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody" class="divide-y divide-[#1e2436]/60 font-mono text-xs sm:text-sm">
-                            <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-500 text-xs font-sans">
-                                    No records extracted yet. Paste SMS logs, upload an Excel/TXT file, or click "Load Mixed Sample".
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-[#1e2436]/60 py-4 text-center text-xs text-slate-500">
-        100% Client-Side Processing &bull; Supports .XLSX, .XLS, .CSV, .TXT &bull; Zero Data Leaves Your Browser
-    </footer>
+    <!-- Output Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="dashboard">
+        <!-- Dashboard cards will be injected here via JS -->
+    </div>
 
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        // --- State Management ---
+        let globalData = [];
+        let historyStack = [];
 
-        // Mixed Sample Data containing Facebook (5 & 6 digit), Instagram (5 & 6 digit), and Other
-        const SAMPLE_LOGS = `Mozambique LX 05Aug258874783907LNST<#> 71846 est votre code Facebook Laz+nxCarLWsadi100USD$0.01$0.01Success2026-11-16 18:58:35Mozambique LX 05Aug258864642988LNST<#> 816546 est votre code Facebook Laz+nxCarLWsadi100USD$0.01$0.01Success2026-11-16 18:58:08Mozambique LX 05Aug258875270088LNST<#> 980347 is your Instagram code. Don't share it. Laz+nxCarLWsadi100USD$0.01$0.01Success2026-11-16 18:57:54Mozambique LX 05Aug258867713037LNST<#> 41522 is your Instagram verification code Laz+nxCarLWsadi100USD$0.01$0.01Success2026-11-16 18:56:12Brazil BR 05Aug5511987654321LNST<#> 559201 is your WhatsApp verification code 2026-11-16 18:55:10Bangladesh BD 05Aug8801712345678LNST<#> 39281 is your login verification PIN 2026-11-16 18:54:02`;
-
-        // Application State
-        let allExtractedRecords = [];
-        let activePlatform = 'ALL'; // 'ALL' | 'Facebook' | 'Instagram' | 'Other'
-        let activeDigits = 'ALL';   // 'ALL' | '6' | '5'
-        let currentFormat = 'pipe'; // 'pipe' | 'spaced-pipe' | 'number-only' | 'otp-only'
-        let isTableOpen = true;
-
-        // DOM Elements
-        const rawInput = document.getElementById('rawInput');
-        const formattedOutput = document.getElementById('formattedOutput');
-        const countBadge = document.getElementById('countBadge');
-        const statusHint = document.getElementById('statusHint');
-        const tableBody = document.getElementById('tableBody');
-        const dedupeToggle = document.getElementById('dedupeToggle');
-        const pad5To6Toggle = document.getElementById('pad5To6Toggle');
-        const categoryCardsGrid = document.getElementById('categoryCardsGrid');
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileStatusText = document.getElementById('fileStatusText');
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-
-        // Stat Counters
-        const statTotal = document.getElementById('statTotal');
-        const statFacebook = document.getElementById('statFacebook');
-        const statInstagram = document.getElementById('statInstagram');
-        const statOther = document.getElementById('statOther');
-        const stat6Digit = document.getElementById('stat6Digit');
-        const stat5Digit = document.getElementById('stat5Digit');
-
-        // Show Toast Notification
-        let toastTimeout;
-        function showToast(msg) {
-            toastMessage.textContent = msg;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 2400);
-        }
-
-        // Reliable Copy Function
-        function copyToClipboard(text, customMessage = 'Copied to clipboard!') {
-            if (!text) {
-                showToast('Nothing to copy!');
-                return;
-            }
-            const tempTextarea = document.createElement('textarea');
-            tempTextarea.value = text;
-            tempTextarea.style.position = 'fixed';
-            tempTextarea.style.left = '-9999px';
-            document.body.appendChild(tempTextarea);
-            tempTextarea.select();
-            try {
-                document.execCommand('copy');
-                showToast(customMessage);
-            } catch (err) {
-                showToast('Failed to copy');
-            }
-            document.body.removeChild(tempTextarea);
-        }
-
-        /**
-         * Platform Classifier
-         * Inspects surrounding SMS context to tag Facebook, Instagram, or Other
-         */
-        function detectPlatform(contextSnippet) {
-            const lower = contextSnippet.toLowerCase();
-            if (/\b(facebook|fb)\b|fb-|code\s+facebook/.test(lower)) {
-                return 'Facebook';
-            }
-            if (/\b(instagram|insta|ig)\b|ig\s+link|instagram\s+code/.test(lower)) {
-                return 'Instagram';
-            }
-            return 'Other';
-        }
-
-        /**
-         * Advanced SMS & Excel Dump Parser
-         * Extracts { phone, otp, originalOtp, digits, platform }
-         */
-        function parseSmsLogs(rawText) {
-            if (!rawText || !rawText.trim()) return [];
-
-            const results = [];
-            const dedupe = dedupeToggle.checked;
-            const pad5To6 = pad5To6Toggle.checked;
-            const seenPairs = new Set();
-
-            // Strategy 1: Global match for concatenated or structured logs
-            // Captures: [1] phone (10-15 digits), [2] separator/prefix up to OTP keyword, [3] OTP (4-8 digits)
-            const gatewayRegex = /(?:^|[^\d-])(\d{10,15})([^\d\n]{0,35}?(?:<#>|code|otp|pin|verification|votre\s+code|is|:)\s*[:\-]?\s*)(\d{4,8})\b/gi;
-
-            const matches = [...rawText.matchAll(gatewayRegex)];
-
-            if (matches.length > 0) {
-                for (let i = 0; i < matches.length; i++) {
-                    const m = matches[i];
-                    const phone = m[1];
-                    const rawOtp = m[3];
-
-                    // Skip accidental year-like matches
-                    if (phone.startsWith('202') && phone.length < 11) continue;
-
-                    // Context window: from end of previous match (or -40 chars) to start of next match (or +110 chars)
-                    const prevEnd = i > 0 ? (matches[i - 1].index + matches[i - 1][0].length) : Math.max(0, m.index - 40);
-                    const nextStart = i < matches.length - 1 ? matches[i + 1].index : Math.min(rawText.length, m.index + m[0].length + 110);
-                    const contextWindow = rawText.slice(prevEnd, nextStart);
-
-                    const platform = detectPlatform(contextWindow);
-                    const finalOtp = (pad5To6 && rawOtp.length === 5) ? `0${rawOtp}` : rawOtp;
-                    const pairKey = `${phone}|${finalOtp}`;
-
-                    if (!dedupe || !seenPairs.has(pairKey)) {
-                        seenPairs.add(pairKey);
-                        results.push({
-                            phone,
-                            otp: finalOtp,
-                            originalOtp: rawOtp,
-                            digits: finalOtp.length,
-                            platform
-                        });
-                    }
-                }
-            }
-
-            // Strategy 2: Line-by-line fallback (supports Excel rows where Number & Message/OTP are in adjacent columns)
-            if (results.length === 0) {
-                const lines = rawText.split(/\r?\n/);
-                for (const line of lines) {
-                    if (!line.trim()) continue;
-
-                    // Strip timestamps (YYYY-MM-DD HH:MM:SS)
-                    const cleanedLine = line.replace(/\b\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\b/g, ' ');
-
-                    const phoneMatch = cleanedLine.match(/(?:^|[^\d])(\d{10,15})(?:[^\d]|$)/);
-                    if (!phoneMatch) continue;
-                    const phone = phoneMatch[1];
-
-                    const withoutPhone = cleanedLine.replace(phone, ' ');
-                    const otpKeywordMatch = withoutPhone.match(/(?:<#>\s*|code\s*[:\-]?\s*|otp\s*[:\-]?\s*|pin\s*[:\-]?\s*)(\d{4,8})\b/i)
-                        || withoutPhone.match(/\b(\d{4,8})(?=\s+(?:est\s+votre|is\s+your|is\s+the))/i)
-                        || withoutPhone.match(/(?:^|[^\d.])(\d{4,8})(?:[^\d.]|$)/);
-
-                    if (otpKeywordMatch) {
-                        const rawOtp = otpKeywordMatch[1];
-                        const platform = detectPlatform(cleanedLine);
-                        const finalOtp = (pad5To6 && rawOtp.length === 5) ? `0${rawOtp}` : rawOtp;
-                        const pairKey = `${phone}|${finalOtp}`;
-
-                        if (!dedupe || !seenPairs.has(pairKey)) {
-                            seenPairs.add(pairKey);
-                            results.push({
-                                phone,
-                                otp: finalOtp,
-                                originalOtp: rawOtp,
-                                digits: finalOtp.length,
-                                platform
-                            });
-                        }
-                    }
-                }
-            }
-
-            return results;
-        }
-
-        // Format Records into Text Lines
-        function formatRecords(records, format) {
-            if (!records.length) return '';
-            return records.map(item => {
-                switch (format) {
-                    case 'pipe': return `${item.phone}|${item.otp}`;
-                    case 'spaced-pipe': return `${item.phone} | ${item.otp}`;
-                    case 'number-only': return `${item.phone}`;
-                    case 'otp-only': return `${item.otp}`;
-                    default: return `${item.phone}|${item.otp}`;
-                }
-            }).join('\n');
-        }
-
-        // Render the 6 Categorized Cards (Facebook 6/5, Instagram 6/5, Other 6/5)
-        function renderCategoryCards(records) {
-            const categories = [
-                {
-                    title: 'Facebook — 6-Digit OTP',
-                    platform: 'Facebook',
-                    digits: 6,
-                    accent: 'blue',
-                    badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-                    borderClass: 'border-blue-500/25',
-                    icon: 'shield-check'
-                },
-                {
-                    title: 'Facebook — 5-Digit OTP',
-                    platform: 'Facebook',
-                    digits: 5,
-                    accent: 'amber',
-                    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-                    borderClass: 'border-blue-500/25',
-                    icon: 'hash'
-                },
-                {
-                    title: 'Instagram — 6-Digit OTP',
-                    platform: 'Instagram',
-                    digits: 6,
-                    accent: 'pink',
-                    badgeClass: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
-                    borderClass: 'border-pink-500/25',
-                    icon: 'camera'
-                },
-                {
-                    title: 'Instagram — 5-Digit OTP',
-                    platform: 'Instagram',
-                    digits: 5,
-                    accent: 'amber',
-                    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-                    borderClass: 'border-pink-500/25',
-                    icon: 'hash'
-                },
-                {
-                    title: 'Other Apps — 6-Digit OTP',
-                    platform: 'Other',
-                    digits: 6,
-                    accent: 'emerald',
-                    badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-                    borderClass: 'border-slate-500/25',
-                    icon: 'layers'
-                },
-                {
-                    title: 'Other Apps — 5-Digit OTP',
-                    platform: 'Other',
-                    digits: 5,
-                    accent: 'amber',
-                    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-                    borderClass: 'border-slate-500/25',
-                    icon: 'hash'
-                }
-            ];
-
-            categoryCardsGrid.innerHTML = categories.map((cat, idx) => {
-                const items = records.filter(r => r.platform === cat.platform && r.digits === cat.digits);
-                const textContent = formatRecords(items, currentFormat);
-
-                return `
-                    <div class="bg-[#0d0f17] border ${cat.borderClass} rounded-xl p-3.5 flex flex-col justify-between">
-                        <div class="flex items-center justify-between gap-2 mb-2.5">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-xs font-semibold text-slate-200 truncate">${cat.title}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <span class="px-2 py-0.5 text-[11px] font-mono font-semibold rounded-md border ${cat.badgeClass}">
-                                    ${items.length}
-                                </span>
-                                <button type="button" onclick="copyCategory(${idx})" 
-                                    class="px-2.5 py-1 text-[11px] font-mono font-medium rounded-md bg-[#181d2c] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-[#262e45] hover:border-cyan-500/40 transition cursor-pointer">
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                        <textarea 
-                            id="catBox_${idx}"
-                            rows="4" 
-                            readonly 
-                            placeholder="No ${cat.platform} (${cat.digits}-digit) records..."
-                            class="w-full bg-[#090b10] border border-[#1a2030] rounded-lg p-2.5 font-mono text-xs text-cyan-300 placeholder-slate-600 resize-none focus:outline-none"
-                        >${textContent}</textarea>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Copy helper for individual category cards
-        window.copyCategory = function(idx) {
-            const box = document.getElementById(`catBox_${idx}`);
-            if (box && box.value.trim()) {
-                const lineCount = box.value.trim().split('\n').length;
-                copyToClipboard(box.value, `Copied ${lineCount} lines!`);
-            } else {
-                showToast('Category box is empty');
-            }
+        // Categories Map
+        const CATEGORIES = {
+            FB6: { id: 'FB6', title: 'FACEBOOK (6-DIGIT)', color: 'cyber-cyan' },
+            FB5: { id: 'FB5', title: 'FACEBOOK (5-DIGIT)', color: 'blue-400' },
+            IG6: { id: 'IG6', title: 'INSTAGRAM (6-DIGIT)', color: 'cyber-magenta' },
+            IG5: { id: 'IG5', title: 'INSTAGRAM (5-DIGIT)', color: 'pink-400' },
+            OTH6: { id: 'OTH6', title: 'OTHER (6-DIGIT)', color: 'yellow-400' },
+            OTH5: { id: 'OTH5', title: 'OTHER (5-DIGIT)', color: 'orange-400' }
         };
 
-        // Platform Badge HTML Helper
-        function getPlatformBadge(platform) {
-            if (platform === 'Facebook') {
-                return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30 font-sans font-medium">Facebook</span>`;
-            }
-            if (platform === 'Instagram') {
-                return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-pink-500/15 text-pink-300 border border-pink-500/30 font-sans font-medium">Instagram</span>`;
-            }
-            return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-slate-500/15 text-slate-300 border border-slate-500/30 font-sans font-medium">Other</span>`;
-        }
+        // Multi-language translation keywords mapping to English
+        const translationDict = {
+            'codigo': 'code', 'código': 'code', 'kód': 'code', 'رمز': 'code', 'kod': 'code', 'kode': 'code', 
+            'senha': 'password', 'mot de passe': 'password', 'пароль': 'password'
+        };
 
-        // Digit Badge HTML Helper
-        function getDigitBadge(digits) {
-            if (digits === 6) {
-                return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">6-Digit</span>`;
-            }
-            if (digits === 5) {
-                return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">5-Digit</span>`;
-            }
-            return `<span class="px-2 py-0.5 text-[11px] rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30">${digits}-Digit</span>`;
-        }
-
-        // Render Filtered Table
-        function renderTable(records) {
-            if (!records.length) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="py-8 text-center text-slate-500 text-xs font-sans">
-                            No matching records for the selected filters.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tableBody.innerHTML = records.map((item, idx) => `
-                <tr class="hover:bg-[#161b29] transition-colors group">
-                    <td class="py-2.5 px-4 text-slate-500 text-xs">${idx + 1}</td>
-                    <td class="py-2.5 px-4">${getPlatformBadge(item.platform)}</td>
-                    <td class="py-2.5 px-4">
-                        <button type="button" onclick="copyToClipboard('${item.phone}', 'Copied Number: ${item.phone}')" 
-                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/50 transition cursor-pointer">
-                            <span>${item.phone}</span>
-                        </button>
-                    </td>
-                    <td class="py-2.5 px-4">
-                        <button type="button" onclick="copyToClipboard('${item.otp}', 'Copied OTP: ${item.otp}')" 
-                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 hover:border-purple-500/60 font-semibold transition cursor-pointer">
-                            <span>${item.otp}</span>
-                        </button>
-                    </td>
-                    <td class="py-2.5 px-4">${getDigitBadge(item.digits)}</td>
-                    <td class="py-2.5 px-4 text-right">
-                        <button type="button" onclick="copyToClipboard('${item.phone}|${item.otp}', 'Copied ${item.phone}|${item.otp}')" 
-                            class="text-xs text-slate-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-[#1e2436] transition cursor-pointer">
-                            Copy Pair
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // Get Currently Filtered Records
-        function getFilteredRecords() {
-            return allExtractedRecords.filter(item => {
-                const matchPlatform = (activePlatform === 'ALL') || (item.platform === activePlatform);
-                const matchDigits = (activeDigits === 'ALL') || (String(item.digits) === activeDigits);
-                return matchPlatform && matchDigits;
-            });
-        }
-
-        // Update Stats & Views
-        function updateViews() {
-            // Update Top Summary Cards
-            statTotal.textContent = allExtractedRecords.length;
-            statFacebook.textContent = allExtractedRecords.filter(r => r.platform === 'Facebook').length;
-            statInstagram.textContent = allExtractedRecords.filter(r => r.platform === 'Instagram').length;
-            statOther.textContent = allExtractedRecords.filter(r => r.platform === 'Other').length;
-            stat6Digit.textContent = allExtractedRecords.filter(r => r.digits === 6).length;
-            stat5Digit.textContent = allExtractedRecords.filter(r => r.digits === 5).length;
-
-            // Render 6 Categorized Split Cards
-            renderCategoryCards(allExtractedRecords);
-
-            // Apply Filters for Unified View
-            const filtered = getFilteredRecords();
-            formattedOutput.value = formatRecords(filtered, currentFormat);
-            countBadge.textContent = `${filtered.length} Showing`;
-
-            if (allExtractedRecords.length > 0) {
-                statusHint.textContent = `Total ${allExtractedRecords.length} extracted • Showing ${filtered.length} filtered`;
-            } else {
-                statusHint.textContent = rawInput.value.trim() ? 'No matching number + OTP patterns found' : 'Ready to parse logs or Excel/TXT files';
-            }
-
-            renderTable(filtered);
-        }
-
-        // Full Parse & Render Pipeline
-        function processAndRender() {
-            allExtractedRecords = parseSmsLogs(rawInput.value);
-            updateViews();
-        }
-
-        /**
-         * File Upload Handler (.txt, .csv, .xlsx, .xls)
-         */
-        async function handleFiles(fileList) {
-            if (!fileList || fileList.length === 0) return;
-
-            let combinedTextChunks = [];
-            const fileNames = [];
-
-            for (const file of fileList) {
-                fileNames.push(file.name);
-                const ext = file.name.split('.').pop().toLowerCase();
-
-                if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
-                    try {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                        workbook.SheetNames.forEach(sheetName => {
-                            const worksheet = workbook.Sheets[sheetName];
-                            // Convert sheet rows into space-separated lines so each row's columns (Number + SMS) stay together
-                            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-                            rows.forEach(row => {
-                                if (Array.isArray(row) && row.length > 0) {
-                                    const rowStr = row.filter(cell => cell !== null && cell !== undefined && String(cell).trim() !== '').join(' ');
-                                    if (rowStr.trim()) combinedTextChunks.push(rowStr);
-                                }
-                            });
+        // --- File Upload Handling ---
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('fileName').textContent = file.name;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                if (file.name.endsWith('.txt')) {
+                    document.getElementById('rawInput').value += (document.getElementById('rawInput').value ? '\n' : '') + data;
+                } else {
+                    // Handle Excel / CSV
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    let combinedText = '';
+                    workbook.SheetNames.forEach(sheetName => {
+                        const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+                        xlData.forEach(row => {
+                            combinedText += row.join(' ') + '\n';
                         });
-                    } catch (err) {
-                        showToast(`Error reading Excel file: ${file.name}`);
-                    }
-                } else {
-                    // Plain text (.txt or log)
-                    const text = await file.text();
-                    combinedTextChunks.push(text);
+                    });
+                    document.getElementById('rawInput').value += (document.getElementById('rawInput').value ? '\n' : '') + combinedText;
                 }
+            };
+            
+            if (file.name.endsWith('.txt')) reader.readAsText(file);
+            else reader.readAsBinaryString(file);
+        });
+
+        // --- Core Processing Logic ---
+        function processData() {
+            const rawText = document.getElementById('rawInput').value;
+            const lines = rawText.split('\n');
+            
+            const convert5to6 = document.getElementById('toggle5to6').checked;
+            const removeDupes = document.getElementById('toggleDuplicates').checked;
+            
+            let newEntries = [];
+            const seenSet = new Set(globalData.map(d => `${d.number}-${d.otp}`));
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // 1. Language Normalization (Basic)
+                let normalizedText = trimmed.toLowerCase();
+                for (const [key, val] of Object.entries(translationDict)) {
+                    normalizedText = normalizedText.replace(new RegExp(key, 'g'), val);
+                }
+
+                // 2. Extract Phone Number (Assume 8-15 digits, optionally with + prefix)
+                const phoneMatch = trimmed.match(/(?:\+?\d{8,15})/);
+                let number = phoneMatch ? phoneMatch[0] : 'UNKNOWN';
+
+                // 3. Extract OTP (5 or 6 digits surrounded by boundaries)
+                // Filter out the phone number string itself so we don't parse it as OTP if it happens to be 5-6 digits
+                let textWithoutPhone = trimmed.replace(number, '');
+                let otpMatch = textWithoutPhone.match(/\b(\d{5,6})\b/);
+                let otp = otpMatch ? otpMatch[1] : null;
+
+                if (!otp) return; // Skip lines without OTP
+
+                let originalOtpLength = otp.length;
+
+                // 4. Platform Detection
+                let platform = 'OTHER';
+                if (normalizedText.includes('facebook') || normalizedText.includes('fb') || normalizedText.includes('laz+nxcarhw') || normalizedText.includes('laz+nxcarlw')) {
+                    platform = 'FB';
+                } else if (normalizedText.includes('instagram') || normalizedText.includes('ig')) {
+                    platform = 'IG';
+                }
+
+                // 5. Apply 5 to 6 conversion if toggled
+                if (originalOtpLength === 5 && convert5to6) {
+                    otp = '0' + otp;
+                    originalOtpLength = 6; // Treat as 6-digit now
+                }
+
+                // Determine Category ID
+                const catId = `${platform}${originalOtpLength}`;
+
+                // 6. Duplicate Check
+                const uniqueKey = `${number}-${otp}`;
+                if (removeDupes && seenSet.has(uniqueKey)) return;
+                
+                seenSet.add(uniqueKey);
+                
+                newEntries.push({
+                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    number: number,
+                    otp: otp,
+                    originalLine: trimmed,
+                    catId: catId
+                });
+            });
+
+            if (newEntries.length > 0) {
+                saveState(); // Save for undo before mutating
+                globalData = [...globalData, ...newEntries];
+                renderDashboard();
+                document.getElementById('rawInput').value = ''; // Clear input on success
+                alert(`Successfully extracted ${newEntries.length} items!`);
+            } else {
+                alert("No valid numbers/OTPs found in the provided text.");
             }
-
-            const mergedContent = combinedTextChunks.join('\n');
-            rawInput.value = rawInput.value.trim()
-                ? `${rawInput.value.trim()}\n${mergedContent}`
-                : mergedContent;
-
-            fileStatusText.textContent = `Loaded: ${fileNames.join(', ')}`;
-            processAndRender();
-            showToast(`Loaded ${fileNames.length} file(s) & extracted ${allExtractedRecords.length} records!`);
         }
 
-        // Drag & Drop & File Input Events
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-            fileInput.value = '';
-        });
+        // --- UI Rendering ---
+        function renderDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-cyan-400', 'bg-cyan-500/5');
-        });
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-cyan-400', 'bg-cyan-500/5');
-        });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-cyan-400', 'bg-cyan-500/5');
-            handleFiles(e.dataTransfer.files);
-        });
+            Object.values(CATEGORIES).forEach(cat => {
+                const items = globalData.filter(d => d.catId === cat.id);
+                
+                const card = document.createElement('div');
+                card.className = `cyber-panel flex flex-col h-[400px] rounded-lg border-t-4 border-${cat.color} overflow-hidden`;
+                
+                card.innerHTML = `
+                    <div class="p-3 bg-cyber-dark border-b border-${cat.color} flex justify-between items-center">
+                        <h3 class="font-bold text-${cat.color} flex items-center gap-2">
+                            ${cat.title} 
+                            <span class="bg-${cat.color} text-cyber-dark px-2 py-0.5 rounded text-xs">${items.length}</span>
+                        </h3>
+                        <button onclick="deleteCategory('${cat.id}')" class="text-red-500 hover:text-red-400 text-xs border border-red-500 px-2 py-1 rounded" title="Clear Category">🗑️</button>
+                    </div>
+                    
+                    <div class="p-2 grid grid-cols-2 gap-2 border-b border-gray-800 bg-black/40">
+                        <select id="exportFormat_${cat.id}" class="cyber-input text-xs p-1">
+                            <option value="num_pipe_otp">number|otp</option>
+                            <option value="num_space_pipe_otp">number | otp</option>
+                            <option value="num_only">number only</option>
+                            <option value="otp_only">otp only</option>
+                        </select>
+                        <button onclick="copyCategory('${cat.id}')" class="cyber-btn text-xs py-1 rounded">📋 COPY</button>
+                    </div>
 
-        // Input & Toggle Events
-        rawInput.addEventListener('input', processAndRender);
-        dedupeToggle.addEventListener('change', processAndRender);
-        pad5To6Toggle.addEventListener('change', processAndRender);
+                    <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                        ${items.length === 0 ? '<p class="text-xs text-gray-500 text-center mt-4">NO DATA FOUND</p>' : ''}
+                        ${items.map(item => `
+                            <div class="flex justify-between items-center bg-cyber-dark p-2 rounded border border-gray-800 hover:border-${cat.color} group transition-colors">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <input type="checkbox" class="cat-check-${cat.id} accent-${cat.color} w-3 h-3" value="${item.id}">
+                                    <div class="flex flex-col truncate">
+                                        <span class="text-sm font-bold text-white tracking-wider">${item.number}</span>
+                                        <span class="text-xs text-${cat.color} font-bold">${item.otp}</span>
+                                    </div>
+                                </div>
+                                <button onclick="deleteItem('${item.id}')" class="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                            </div>
+                        `).join('')}
+                    </div>
 
-        document.getElementById('btnExtract').addEventListener('click', () => {
-            processAndRender();
-            if (allExtractedRecords.length > 0) {
-                showToast(`Extracted & classified ${allExtractedRecords.length} records!`);
+                    ${items.length > 0 ? `
+                    <div class="p-2 bg-cyber-dark border-t border-gray-800">
+                        <button onclick="deleteSelected('${cat.id}')" class="w-full text-xs cyber-btn-outline py-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded">DELETE SELECTED</button>
+                    </div>
+                    ` : ''}
+                `;
+                
+                dashboard.appendChild(card);
+            });
+        }
+
+        // --- Data Management ---
+        function saveState() {
+            // Keep last 10 states
+            historyStack.push(JSON.stringify(globalData));
+            if(historyStack.length > 10) historyStack.shift();
+        }
+
+        function undoDelete() {
+            if (historyStack.length > 0) {
+                globalData = JSON.parse(historyStack.pop());
+                renderDashboard();
             } else {
-                showToast('No valid number & OTP pairs detected.');
+                alert("Nothing to undo!");
             }
-        });
+        }
 
-        // Platform Filter Tabs
-        document.querySelectorAll('.platform-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.platform-tab').forEach(t => {
-                    t.classList.remove('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
-                    t.classList.add('text-slate-400', 'border-transparent');
-                });
-                tab.classList.add('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
-                tab.classList.remove('text-slate-400', 'border-transparent');
-                activePlatform = tab.dataset.platform;
-                updateViews();
-            });
-        });
-
-        // Digit Length Filter Tabs
-        document.querySelectorAll('.digit-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.digit-tab').forEach(t => {
-                    t.classList.remove('active', 'bg-purple-500/20', 'text-purple-300', 'border-purple-500/40');
-                    t.classList.add('text-slate-400', 'border-transparent');
-                });
-                tab.classList.add('active', 'bg-purple-500/20', 'text-purple-300', 'border-purple-500/40');
-                tab.classList.remove('text-slate-400', 'border-transparent');
-                activeDigits = tab.dataset.digits;
-                updateViews();
-            });
-        });
-
-        // Format Tabs
-        document.querySelectorAll('.format-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.format-tab').forEach(t => {
-                    t.classList.remove('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
-                    t.classList.add('text-slate-400', 'border-transparent');
-                });
-                tab.classList.add('active', 'bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40');
-                tab.classList.remove('text-slate-400', 'border-transparent');
-                currentFormat = tab.dataset.format;
-                updateViews();
-            });
-        });
-
-        // Load Mixed Sample
-        document.getElementById('btnSample').addEventListener('click', () => {
-            rawInput.value = SAMPLE_LOGS;
-            fileStatusText.textContent = 'Loaded mixed sample (Facebook, Instagram, Other • 5 & 6 Digit)';
-            processAndRender();
-            showToast('Mixed sample logs loaded!');
-        });
-
-        // Clear Button
-        document.getElementById('btnClear').addEventListener('click', () => {
-            rawInput.value = '';
-            fileStatusText.textContent = 'Supports multi-sheet Excel workbooks & bulk text dumps';
-            processAndRender();
-            rawInput.focus();
-            showToast('Cleared all data');
-        });
-
-        // Paste Button
-        document.getElementById('btnPaste').addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                    rawInput.value = text;
-                    processAndRender();
-                    showToast('Pasted from clipboard!');
-                } else {
-                    showToast('Clipboard is empty');
-                }
-            } catch (err) {
-                rawInput.focus();
-                showToast('Press Ctrl+V / Cmd+V in the box to paste');
+        function clearAll() {
+            if(confirm("WARNING: Clear all extracted data? This action can be undone once.")) {
+                saveState();
+                globalData = [];
+                renderDashboard();
             }
-        });
+        }
 
-        // Copy Filtered Button
-        document.getElementById('btnCopyAll').addEventListener('click', () => {
-            const filtered = getFilteredRecords();
-            copyToClipboard(formattedOutput.value, `Copied ${filtered.length} filtered lines!`);
-        });
+        function deleteItem(id) {
+            saveState();
+            globalData = globalData.filter(d => d.id !== id);
+            renderDashboard();
+        }
 
-        // Export .TXT Button
-        document.getElementById('btnDownloadTxt').addEventListener('click', () => {
-            const content = formattedOutput.value;
-            if (!content) {
-                showToast('Nothing to export!');
+        function deleteCategory(catId) {
+            saveState();
+            globalData = globalData.filter(d => d.catId !== catId);
+            renderDashboard();
+        }
+
+        function deleteSelected(catId) {
+            const checkboxes = document.querySelectorAll(`.cat-check-${catId}:checked`);
+            if (checkboxes.length === 0) return;
+            
+            saveState();
+            const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+            globalData = globalData.filter(d => !idsToDelete.includes(d.id));
+            renderDashboard();
+        }
+
+        // --- Export Tools ---
+        function formatOutput(item, format) {
+            switch(format) {
+                case 'num_pipe_otp': return `${item.number}|${item.otp}`;
+                case 'num_space_pipe_otp': return `${item.number} | ${item.otp}`;
+                case 'num_only': return `${item.number}`;
+                case 'otp_only': return `${item.otp}`;
+                default: return `${item.number}|${item.otp}`;
+            }
+        }
+
+        function copyCategory(catId) {
+            const items = globalData.filter(d => d.catId === catId);
+            if (items.length === 0) {
+                alert("No data to copy in this category.");
                 return;
             }
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-            a.href = url;
-            a.download = `otp-${activePlatform.toLowerCase()}-${activeDigits}digit-${timestamp}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('Exported .TXT file!');
-        });
+            
+            const format = document.getElementById(`exportFormat_${catId}`).value;
+            const textToCopy = items.map(item => formatOutput(item, format)).join('\n');
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`Copied ${items.length} items to clipboard!`);
+            }).catch(err => {
+                console.error('Copy failed', err);
+                alert("Copy failed. Check console.");
+            });
+        }
 
-        // Export Multi-Sheet Excel (.XLSX) Button
-        document.getElementById('btnDownloadXlsx').addEventListener('click', () => {
-            if (!allExtractedRecords.length) {
-                showToast('Nothing to export to Excel!');
-                return;
-            }
-
+        function exportExcel() {
+            if (globalData.length === 0) return alert("No data to export!");
+            
             const wb = XLSX.utils.book_new();
-
-            const toSheetData = (list) => list.map((r, i) => ({
-                '#': i + 1,
-                'Platform': r.platform,
-                'Phone Number': r.phone,
-                'OTP Code': r.otp,
-                'Digits': r.digits,
-                'Combined (number|otp)': `${r.phone}|${r.otp}`
-            }));
-
-            const sheets = [
-                { name: 'All Extracted', data: allExtractedRecords },
-                { name: '6-Digit OTPs', data: allExtractedRecords.filter(r => r.digits === 6) },
-                { name: '5-Digit OTPs', data: allExtractedRecords.filter(r => r.digits === 5) },
-                { name: 'Facebook', data: allExtractedRecords.filter(r => r.platform === 'Facebook') },
-                { name: 'Instagram', data: allExtractedRecords.filter(r => r.platform === 'Instagram') },
-                { name: 'Other', data: allExtractedRecords.filter(r => r.platform === 'Other') }
-            ];
-
-            sheets.forEach(s => {
-                if (s.data.length > 0) {
-                    const ws = XLSX.utils.json_to_sheet(toSheetData(s.data));
-                    XLSX.utils.book_append_sheet(wb, ws, s.name);
+            
+            Object.values(CATEGORIES).forEach(cat => {
+                const items = globalData.filter(d => d.catId === cat.id);
+                if (items.length > 0) {
+                    const wsData = items.map(item => ({
+                        'Phone Number': item.number,
+                        'OTP Code': item.otp,
+                        'Original Text': item.originalLine
+                    }));
+                    const ws = XLSX.utils.json_to_sheet(wsData);
+                    // Name sheet based on category title (max 31 chars for excel)
+                    let sheetName = cat.title.replace(/[^a-zA-Z0-9 -]/g, "").substring(0, 31);
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
                 }
             });
+            
+            XLSX.writeFile(wb, "SMS_Extracted_Data.xlsx");
+        }
 
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-            XLSX.writeFile(wb, `SMS-OTP-Classified-${timestamp}.xlsx`);
-            showToast('Exported Multi-Sheet .XLSX file!');
-        });
+        function exportCSV() {
+            if (globalData.length === 0) return alert("No data to export!");
+            
+            // For CSV, we put everything in one sheet but add a Category column
+            const wsData = globalData.map(item => ({
+                'Category': CATEGORIES[item.catId].title,
+                'Phone Number': item.number,
+                'OTP Code': item.otp,
+                'Original Text': item.originalLine
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(wsData);
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "SMS_Extracted_Data.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-        // Toggle Table Visibility
-        const toggleTableBtn = document.getElementById('toggleTableBtn');
-        const tableWrapper = document.getElementById('tableWrapper');
-        const tableChevron = document.getElementById('tableChevron');
-
-        toggleTableBtn.addEventListener('click', () => {
-            isTableOpen = !isTableOpen;
-            if (isTableOpen) {
-                tableWrapper.classList.remove('hidden');
-                tableChevron.classList.add('rotate-180');
-            } else {
-                tableWrapper.classList.add('hidden');
-                tableChevron.classList.remove('rotate-180');
-            }
-        });
-
-        // Initial Render
-        renderCategoryCards([]);
+        // Init dashboard on load
+        renderDashboard();
     </script>
 </body>
 </html>
